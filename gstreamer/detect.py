@@ -1,17 +1,25 @@
 import argparse
 import collections
-import common
-import gstreamer
-import numpy as np
 import os
 import re
-import svgwrite
 import time
-from tracker import ObjectTracker
 
+import numpy as np
+import svgwrite
+
+import common
+import gstreamer
+from tracker import ObjectTracker
 
 Object = collections.namedtuple('Object', ['id', 'score', 'bbox'])
 
+target_items = ["person",
+  "bicycle",
+  "car",
+  "motorcycle",
+  "bus",
+  "truck",
+ ]
 
 def load_labels(path):
     p = re.compile(r'\s*(\d+)(.+)')
@@ -34,19 +42,21 @@ def generate_svg(src_size, inference_size, inference_box, objs, labels, text_lin
 
     for y, line in enumerate(text_lines, start=1):
         shadow_text(dwg, 10, y*20, line)
+    # tracking success with object ID
     if trackerFlag and (np.array(trdata)).size:
         for td in trdata:
             x0, y0, x1, y1, trackID = td[0].item(), td[1].item(
             ), td[2].item(), td[3].item(), td[4].item()
             overlap = 0
             for ob in objs:
+            
                 dx0, dy0, dx1, dy1 = ob.bbox.xmin.item(), ob.bbox.ymin.item(
                 ), ob.bbox.xmax.item(), ob.bbox.ymax.item()
                 area = (min(dx1, x1)-max(dx0, x0))*(min(dy1, y1)-max(dy0, y0))
                 if (area > overlap):
                     overlap = area
                     obj = ob
-
+                    
             # Relative coordinates.
             x, y, w, h = x0, y0, x1 - x0, y1 - y0
             # Absolute coordinates, input tensor space.
@@ -57,30 +67,37 @@ def generate_svg(src_size, inference_size, inference_box, objs, labels, text_lin
             # Scale to source coordinate space.
             x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
             percent = int(100 * obj.score)
-            label = '{}% {} ID:{}'.format(
-                percent, labels.get(obj.id, obj.id), int(trackID))
-            print(label)
+            label = '{}% {} ID:{}'.format(percent, labels.get(obj.id, obj.id), int(trackID))
+            item = labels.get(obj.id, obj.id)
+            
+            if item == "person" or item == "car":
+                print(label)
+            
+            # if percent > 70
+            #     print(label)
             shadow_text(dwg, x, y - 5, label)
             dwg.add(dwg.rect(insert=(x, y), size=(w, h),
                              fill='none', stroke='red', stroke_width='2'))
-    else:
-        for obj in objs:
-            x0, y0, x1, y1 = list(obj.bbox)
-            # Relative coordinates.
-            x, y, w, h = x0, y0, x1 - x0, y1 - y0
-            # Absolute coordinates, input tensor space.
-            x, y, w, h = int(x * inf_w), int(y *
-                                             inf_h), int(w * inf_w), int(h * inf_h)
-            # Subtract boxing offset.
-            x, y = x - box_x, y - box_y
-            # Scale to source coordinate space.
-            x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
-            percent = int(100 * obj.score)
-            label = '{}% {}'.format(percent, labels.get(obj.id, obj.id))
-            shadow_text(dwg, x, y - 5, label)
-            dwg.add(dwg.rect(insert=(x, y), size=(w, h),
-                             fill='none', stroke='red', stroke_width='2'))
-    return dwg.tostring()
+    # detected something but without tracking ID
+    # else:
+    #     for obj in objs:
+    #         x0, y0, x1, y1 = list(obj.bbox)
+    #         # Relative coordinates.
+    #         x, y, w, h = x0, y0, x1 - x0, y1 - y0
+    #         # Absolute coordinates, input tensor space.
+    #         x, y, w, h = int(x * inf_w), int(y *
+    #                                          inf_h), int(w * inf_w), int(h * inf_h)
+    #         # Subtract boxing offset.
+    #         x, y = x - box_x, y - box_y
+    #         # Scale to source coordinate space.
+    #         x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
+    #         percent = int(100 * obj.score)
+    #         label = '{}% {}'.format(percent, labels.get(obj.id, obj.id))
+            
+    #         shadow_text(dwg, x, y - 5, label)
+    #         dwg.add(dwg.rect(insert=(x, y), size=(w, h),
+    #                          fill='none', stroke='red', stroke_width='2'))
+    # return dwg.tostring()
 
 
 class BBox(collections.namedtuple('BBox', ['xmin', 'ymin', 'xmax', 'ymax'])):
@@ -116,7 +133,7 @@ def main():
                         default=os.path.join(default_model_dir, default_labels))
     parser.add_argument('--top_k', type=int, default=3,
                         help='number of categories with highest score to display')
-    parser.add_argument('--threshold', type=float, default=0.1,
+    parser.add_argument('--threshold', type=float, default=0.7,
                         help='classifier score threshold')
     parser.add_argument('--videosrc', help='Which video source to use. ',
                         default='/dev/video0')
