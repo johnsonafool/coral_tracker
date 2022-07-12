@@ -1,37 +1,3 @@
-# Copyright 2019 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""
-A demo which runs object detection on camera frames using GStreamer.
-It also provides support for Object Tracker.
-
-Run default object detection:
-python3 detect.py
-
-Choose different camera and input encoding
-python3 detect.py --videosrc /dev/video1 --videofmt jpeg
-
-Choose an Object Tracker. Example : To run sort tracker
-python3 detect.py --tracker sort
-
-TEST_DATA=../all_models
-
-Run coco model:
-python3 detect.py \
-  --model ${TEST_DATA}/mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite \
-  --labels ${TEST_DATA}/coco_labels.txt
-"""
 import argparse
 import collections
 import common
@@ -93,6 +59,7 @@ def generate_svg(src_size, inference_size, inference_box, objs, labels, text_lin
             percent = int(100 * obj.score)
             label = '{}% {} ID:{}'.format(
                 percent, labels.get(obj.id, obj.id), int(trackID))
+            print(label)
             shadow_text(dwg, x, y - 5, label)
             dwg.add(dwg.rect(insert=(x, y), size=(w, h),
                              fill='none', stroke='red', stroke_width='2'))
@@ -117,10 +84,6 @@ def generate_svg(src_size, inference_size, inference_box, objs, labels, text_lin
 
 
 class BBox(collections.namedtuple('BBox', ['xmin', 'ymin', 'xmax', 'ymax'])):
-    """Bounding box.
-    Represents a rectangle which sides are either vertical or horizontal, parallel
-    to the x or y axis.
-    """
     __slots__ = ()
 
 
