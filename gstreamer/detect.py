@@ -1,5 +1,6 @@
 import argparse
 import collections
+import datetime
 import os
 import re
 import time
@@ -9,7 +10,8 @@ import svgwrite
 
 import common
 import gstreamer
-from tracker import ObjectTracker
+
+start_time = time.time()
 
 Object = collections.namedtuple('Object', ['id', 'score', 'bbox'])
 
@@ -20,6 +22,9 @@ target_items = ["person",
   "bus",
   "truck",
  ]
+
+person_count = []
+# car_count = []
 
 def load_labels(path):
     p = re.compile(r'\s*(\d+)(.+)')
@@ -68,13 +73,14 @@ def generate_svg(src_size, inference_size, inference_box, objs, labels, text_lin
             x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
             percent = int(100 * obj.score)
             label = '{}% {} ID:{}'.format(percent, labels.get(obj.id, obj.id), int(trackID))
-            item = labels.get(obj.id, obj.id)
+            # item = labels.get(obj.id, obj.id)
             
-            if item == "person" or item == "car":
-                print(label)
-            
-            # if percent > 70
-            #     print(label)
+            if labels.get(obj.id, obj.id) == "person":
+                person_count.append(trackID)
+
+            # elif item == "car":
+            #     label.append(f"{item}: {trackID}")
+
             shadow_text(dwg, x, y - 5, label)
             dwg.add(dwg.rect(insert=(x, y), size=(w, h),
                              fill='none', stroke='red', stroke_width='2'))
@@ -196,3 +202,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    print("--- %s seconds ---" % (time.time() - start_time))
+    print(person_count)
