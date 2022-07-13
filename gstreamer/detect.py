@@ -1,3 +1,7 @@
+### test 1
+### test 2
+
+
 import argparse
 import collections
 import datetime
@@ -6,84 +10,115 @@ import re
 import time
 
 import numpy as np
-import svgwrite
 
 import common
 import gstreamer
 
+# import svgwrite
+
+
+# from pandas import concat
+
+
 start_time = time.time()
 
-Object = collections.namedtuple('Object', ['id', 'score', 'bbox'])
+Object = collections.namedtuple("Object", ["id", "score", "bbox"])
 
-target_items = ["person",
-  "bicycle",
-  "car",
-  "motorcycle",
-  "bus",
-  "truck",
- ]
+target_items = [
+    "person",
+    "bicycle",
+    "car",
+    "motorcycle",
+    "bus",
+    "truck",
+]
 
 person_count = []
 # car_count = []
 
+
 def load_labels(path):
-    p = re.compile(r'\s*(\d+)(.+)')
-    with open(path, 'r', encoding='utf-8') as f:
+    p = re.compile(r"\s*(\d+)(.+)")
+    with open(path, "r", encoding="utf-8") as f:
         lines = (p.match(line).groups() for line in f.readlines())
         return {int(num): text.strip() for num, text in lines}
 
 
 def shadow_text(dwg, x, y, text, font_size=20):
-    dwg.add(dwg.text(text, insert=(x+1, y+1), fill='black', font_size=font_size))
-    dwg.add(dwg.text(text, insert=(x, y), fill='white', font_size=font_size))
+    dwg.add(dwg.text(text, insert=(x + 1, y + 1), fill="black", font_size=font_size))
+    dwg.add(dwg.text(text, insert=(x, y), fill="white", font_size=font_size))
 
 
-def generate_svg(src_size, inference_size, inference_box, objs, labels, text_lines, trdata, trackerFlag):
-    dwg = svgwrite.Drawing('', size=src_size)
+def generate_svg(
+    src_size, inference_size, inference_box, objs, labels, trdata, trackerFlag,
+):
+    # dwg = svgwrite.Drawing('', size=src_size)
     src_w, src_h = src_size
     inf_w, inf_h = inference_size
     box_x, box_y, box_w, box_h = inference_box
     scale_x, scale_y = src_w / box_w, src_h / box_h
 
-    for y, line in enumerate(text_lines, start=1):
-        shadow_text(dwg, 10, y*20, line)
+    # for y, line in enumerate(text_lines, start=1):
+    #     shadow_text(dwg, 10, y*20, line)
     # tracking success with object ID
     if trackerFlag and (np.array(trdata)).size:
         for td in trdata:
-            x0, y0, x1, y1, trackID = td[0].item(), td[1].item(
-            ), td[2].item(), td[3].item(), td[4].item()
+            x0, y0, x1, y1, trackID = (
+                td[0].item(),
+                td[1].item(),
+                td[2].item(),
+                td[3].item(),
+                td[4].item(),
+            )
             overlap = 0
             for ob in objs:
-            
-                dx0, dy0, dx1, dy1 = ob.bbox.xmin.item(), ob.bbox.ymin.item(
-                ), ob.bbox.xmax.item(), ob.bbox.ymax.item()
-                area = (min(dx1, x1)-max(dx0, x0))*(min(dy1, y1)-max(dy0, y0))
-                if (area > overlap):
+
+                dx0, dy0, dx1, dy1 = (
+                    ob.bbox.xmin.item(),
+                    ob.bbox.ymin.item(),
+                    ob.bbox.xmax.item(),
+                    ob.bbox.ymax.item(),
+                )
+                area = (min(dx1, x1) - max(dx0, x0)) * (min(dy1, y1) - max(dy0, y0))
+                if area > overlap:
                     overlap = area
                     obj = ob
-                    
+
             # Relative coordinates.
             x, y, w, h = x0, y0, x1 - x0, y1 - y0
             # Absolute coordinates, input tensor space.
-            x, y, w, h = int(x * inf_w), int(y *
-                                             inf_h), int(w * inf_w), int(h * inf_h)
+            x, y, w, h = int(x * inf_w), int(y * inf_h), int(w * inf_w), int(h * inf_h)
             # Subtract boxing offset.
             x, y = x - box_x, y - box_y
             # Scale to source coordinate space.
             x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
             percent = int(100 * obj.score)
-            label = '{}% {} ID:{}'.format(percent, labels.get(obj.id, obj.id), int(trackID))
+            label = "{}% {} ID:{}".format(
+                percent, labels.get(obj.id, obj.id), int(trackID)
+            )
             # item = labels.get(obj.id, obj.id)
-            
+
             if labels.get(obj.id, obj.id) == "person":
+                if trackID in person_count:
+                    continue
                 person_count.append(trackID)
+
+            ### Justin Psudocode ###
+            # current_time = time.time()
+            # duration =  current_time - start_time;
+            # if duration > 5min:
+            #     upload_to_server() // print('Number of people: {}'.format(len(person_count)))
+            #     person_count.clean()
+            #     start_time = current_time
 
             # elif item == "car":
             #     label.append(f"{item}: {trackID}")
 
-            shadow_text(dwg, x, y - 5, label)
-            dwg.add(dwg.rect(insert=(x, y), size=(w, h),
-                             fill='none', stroke='red', stroke_width='2'))
+            # shadow_text(dwg, x, y - 5, label)
+            # dwg.add(dwg.rect(insert=(x, y), size=(w, h),
+            #                  fill='none', stroke='red', stroke_width='2'))
+            ### Justin Psudocode ###
+
     # detected something but without tracking ID
     # else:
     #     for obj in objs:
@@ -99,19 +134,20 @@ def generate_svg(src_size, inference_size, inference_box, objs, labels, text_lin
     #         x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
     #         percent = int(100 * obj.score)
     #         label = '{}% {}'.format(percent, labels.get(obj.id, obj.id))
-            
+
     #         shadow_text(dwg, x, y - 5, label)
     #         dwg.add(dwg.rect(insert=(x, y), size=(w, h),
     #                          fill='none', stroke='red', stroke_width='2'))
     # return dwg.tostring()
 
 
-class BBox(collections.namedtuple('BBox', ['xmin', 'ymin', 'xmax', 'ymax'])):
+class BBox(collections.namedtuple("BBox", ["xmin", "ymin", "xmax", "ymax"])):
     __slots__ = ()
 
 
 def get_output(interpreter, score_threshold, top_k, image_scale=1.0):
-    """Returns list of detected objects."""
+
+    # returns list of detected objects
     boxes = common.output_tensor(interpreter, 0)
     category_ids = common.output_tensor(interpreter, 1)
     scores = common.output_tensor(interpreter, 2)
@@ -121,48 +157,69 @@ def get_output(interpreter, score_threshold, top_k, image_scale=1.0):
         return Object(
             id=int(category_ids[i]),
             score=scores[i],
-            bbox=BBox(xmin=np.maximum(0.0, xmin),
-                      ymin=np.maximum(0.0, ymin),
-                      xmax=np.minimum(1.0, xmax),
-                      ymax=np.minimum(1.0, ymax)))
+            bbox=BBox(
+                xmin=np.maximum(0.0, xmin),
+                ymin=np.maximum(0.0, ymin),
+                xmax=np.minimum(1.0, xmax),
+                ymax=np.minimum(1.0, ymax),
+            ),
+        )
+
     return [make(i) for i in range(top_k) if scores[i] >= score_threshold]
 
 
 def main():
-    default_model_dir = '../models'
-    default_model = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
-    default_labels = 'coco_labels.txt'
+    default_model_dir = "../models"
+    default_model = "mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite"
+    default_labels = "coco_labels.txt"
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', help='.tflite model path',
-                        default=os.path.join(default_model_dir, default_model))
-    parser.add_argument('--labels', help='label file path',
-                        default=os.path.join(default_model_dir, default_labels))
-    parser.add_argument('--top_k', type=int, default=3,
-                        help='number of categories with highest score to display')
-    parser.add_argument('--threshold', type=float, default=0.7,
-                        help='classifier score threshold')
-    parser.add_argument('--videosrc', help='Which video source to use. ',
-                        default='/dev/video0')
-    parser.add_argument('--videofmt', help='Input video format.',
-                        default='raw',
-                        choices=['raw', 'h264', 'jpeg'])
-    parser.add_argument('--tracker', help='Name of the Object Tracker To be used.',
-                        default=None,
-                        choices=[None, 'sort'])
+    # parser.add_argument('--model', help='.tflite model path',
+    #                     default=os.path.join(default_model_dir, default_model))
+    # parser.add_argument('--labels', help='label file path',
+    #                     default=os.path.join(default_model_dir, default_labels))
+    parser.add_argument(
+        "--top_k",
+        type=int,
+        default=3,
+        help="number of categories with highest score to display",
+    )
+    parser.add_argument(
+        "--threshold", type=float, default=0.7, help="classifier score threshold"
+    )
+    parser.add_argument(
+        "--videosrc", help="Which video source to use. ", default="/dev/video0"
+    )
+    parser.add_argument(
+        "--videofmt",
+        help="Input video format.",
+        default="raw",
+        choices=["raw", "h264", "jpeg"],
+    )
+    parser.add_argument(
+        "--tracker",
+        help="Name of the Object Tracker To be used.",
+        default=None,
+        choices=[None, "sort"],
+    )
     args = parser.parse_args()
 
-    print('Loading {} with {} labels.'.format(args.model, args.labels))
-    interpreter = common.make_interpreter(args.model)
+    # print('Loading {} with {} labels.'.format(args.model, args.labels))
+    print(
+        f"LOADING {os.path.join(default_model_dir, default_model)} model with {os.path.join(default_model_dir, default_labels)}"
+    )
+    interpreter = common.make_interpreter(
+        os.path.join(default_model_dir, default_model)
+    )
     interpreter.allocate_tensors()
-    labels = load_labels(args.labels)
+    labels = load_labels(os.path.join(default_model_dir, default_labels))
 
     w, h, _ = common.input_image_size(interpreter)
     inference_size = (w, h)
     # Average fps over last 30 frames.
-    fps_counter = common.avg_fps_counter(30)
+    # fps_counter = common.avg_fps_counter(30)
 
     def user_callback(input_tensor, src_size, inference_box, mot_tracker):
-        nonlocal fps_counter
+        # nonlocal fps_counter
         start_time = time.monotonic()
         common.set_input(interpreter, input_tensor)
         interpreter.invoke()
@@ -186,21 +243,32 @@ def main():
             if mot_tracker != None:
                 trdata = mot_tracker.update(detections)
                 trackerFlag = True
-            text_lines = [
-                'Inference: {:.2f} ms'.format((end_time - start_time) * 1000),
-                'FPS: {} fps'.format(round(next(fps_counter))), ]
+            # text_lines = [
+            #     "Inference: {:.2f} ms".format((end_time - start_time) * 1000),
+            #     "FPS: {} fps".format(round(next(fps_counter))),
+            # ]
         if len(objs) != 0:
-            return generate_svg(src_size, inference_size, inference_box, objs, labels, text_lines, trdata, trackerFlag)
+            return generate_svg(
+                src_size,
+                inference_size,
+                inference_box,
+                objs,
+                labels,
+                trdata,
+                trackerFlag,
+            )
 
-    result = gstreamer.run_pipeline(user_callback,
-                                    src_size=(640, 480),
-                                    appsink_size=inference_size,
-                                    trackerName=args.tracker,
-                                    videosrc=args.videosrc,
-                                    videofmt=args.videofmt)
+    result = gstreamer.run_pipeline(
+        user_callback,
+        src_size=(640, 480),
+        appsink_size=inference_size,
+        trackerName=args.tracker,
+        videosrc=args.videosrc,
+        videofmt=args.videofmt,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
     print("--- %s seconds ---" % (time.time() - start_time))
     print(person_count)

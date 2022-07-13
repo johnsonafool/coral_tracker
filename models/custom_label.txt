@@ -4,4 +4,3 @@
 3  motorcycle
 4  bus
 5  truck
-6  traffic light

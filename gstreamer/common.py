@@ -7,7 +7,7 @@ gi.require_version('Gst', '1.0')
 import time
 
 import numpy as np
-import svgwrite
+# import svgwrite
 import tflite_runtime.interpreter as tflite
 from gi.repository import Gst
 

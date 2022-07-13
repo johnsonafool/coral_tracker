@@ -1,9 +1,11 @@
 import sys
-import svgwrite
 import threading
-from tracker import ObjectTracker
 
 import gi
+import svgwrite
+
+from tracker import ObjectTracker
+
 gi.require_version('Gst', '1.0')
 gi.require_version('GstBase', '1.0')
 gi.require_version('Gtk', '3.0')
@@ -34,7 +36,7 @@ class GstPipeline:
         bus.connect('message', self.on_bus_message)
 
         # Set up a full screen window on Coral, no-op otherwise.
-        self.setu_window()
+        self.setup_window()
 
     def run(self):
         # Start inference worker.
@@ -46,6 +48,7 @@ class GstPipeline:
         self.pipeline.set_state(Gst.State.PLAYING)
         try:
             Gtk.main()
+            pass
         except:
             pass
 
@@ -141,8 +144,8 @@ class GstPipeline:
                     allocation.width, allocation.height)
             return False
 
-        window = Gtk.Window(Gtk.WindowType.TOPLEVEL)
-        window.fullscreen()
+        window = Gtk.Window(Gtk.WindowType.POPUP)
+        # window.fullscreen()
 
         drawing_area = Gtk.DrawingArea()
         window.add(drawing_area)
@@ -178,7 +181,7 @@ class GstPipeline:
             return Gst.BusSyncReply.PASS
 
         bus = self.pipeline.get_bus()
-        bus.set_sync_handler(on_bus_message_sync, self.overlaysink)
+        # bus.set_sync_handler(on_bus_message_sync, self.overlaysink)
 
 def detectCoralDevBoard():
   try:
@@ -230,7 +233,6 @@ def run_pipeline(user_function,
         scale_caps = None
         PIPELINE += """ ! decodebin ! glupload ! tee name=t
             t. ! queue ! glfilterbin filter=glbox name=glbox ! {sink_caps} ! {sink_element}
-            t. ! queue ! glsvgoverlaysink name=overlaysink
         """
     else:
         scale = min(appsink_size[0] / src_size[0], appsink_size[1] / src_size[1])
