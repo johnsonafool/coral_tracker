@@ -97,46 +97,37 @@ def generate_svg(
             label = "{}% {} ID:{}".format(
                 percent, labels.get(obj.id, obj.id), int(trackID)
             )
+            if labels.get(obj.id, obj.id) == "person":
+                if trackID in person_count:
+                    continue
+                person_count.append(trackID)
             # item = labels.get(obj.id, obj.id)
 
-            while True:
-                start_time = time.time()
-                stop = time.time + 10
-                while time.time() < stop:
+    # while True:
+    #     start_time = time.time()
+    #     stop = time.time() + 5
+    #     while time.time() < stop:
+    #     continue
 
-                    if labels.get(obj.id, obj.id) == "person":
-                        if trackID in person_count:
-                            continue
-                        person_count.append(trackID)
-                        ### append time
+    # print(person_count)
 
-                print(person_count)
+    # elif item == "car":
+    #     label.append(f"{item}: {trackID}")
 
-                # elif item == "car":
-                #     label.append(f"{item}: {trackID}")
+    ###################        Justin Psudocode        ###################
 
-            ######################################
+    # current_time = time.time()
+    # duration =  current_time - start_time;
+    # if duration > 5min:
+    #     upload_to_server() // print('Number of people: {}'.format(len(person_count)))
+    #     person_count.clean()
+    #     start_time = current_time
 
-            # def update_list():
-            #     def upadte_time():
-            #         pass
+    ###################        Justin Psudocode        ###################
 
-            #     pass
-
-            ### Justin Psudocode ###
-            # current_time = time.time()
-            # duration =  current_time - start_time;
-            # if duration > 5min:
-            #     upload_to_server() // print('Number of people: {}'.format(len(person_count)))
-            #     person_count.clean()
-            #     start_time = current_time
-
-            # shadow_text(dwg, x, y - 5, label)
-            # dwg.add(dwg.rect(insert=(x, y), size=(w, h),
-            #                  fill='none', stroke='red', stroke_width='2'))
-            ### Justin Psudocode ###
-
-            ######################################
+    # shadow_text(dwg, x, y - 5, label)
+    # dwg.add(dwg.rect(insert=(x, y), size=(w, h),
+    #                  fill='none', stroke='red', stroke_width='2'))
 
     # detected something but without tracking ID
     # else:
@@ -278,6 +269,15 @@ def main():
                 trackerFlag,
             )
 
+        printerLooper = True
+        while printerLooper == True:
+            initial_time = time.time()
+            time.sleep(3)
+            end_time = time.time()
+            print(f"{len(person_count)} \t {person_count} \t {end_time - initial_time}")
+            person_count.clear()
+            printerLooper = False
+
     result = gstreamer.run_pipeline(
         user_callback,
         src_size=(640, 480),
@@ -292,4 +292,9 @@ if __name__ == "__main__":
     print("\nProcessing ... press control C to exit")
     main()
     print("\n\nCoral running %s seconds " % (time.time() - start_time))
-    # print(person_count)
+
+    # stop = time.time + 10
+    # while time.time() < stop:
+
+    #         ### append time
+    #     print(len(person_count))
