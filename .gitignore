@@ -1,2 +1,4 @@
 all_models/
 **__pycache__
+test.py
+post_test.py

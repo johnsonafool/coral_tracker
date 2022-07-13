@@ -8,6 +8,7 @@ import datetime
 import os
 import re
 import time
+from tracemalloc import stop
 
 import numpy as np
 
@@ -24,14 +25,14 @@ start_time = time.time()
 
 Object = collections.namedtuple("Object", ["id", "score", "bbox"])
 
-target_items = [
-    "person",
-    "bicycle",
-    "car",
-    "motorcycle",
-    "bus",
-    "truck",
-]
+# target_items = [
+#     "person",
+#     "bicycle",
+#     "car",
+#     "motorcycle",
+#     "bus",
+#     "truck",
+# ]
 
 person_count = []
 # car_count = []
@@ -98,10 +99,29 @@ def generate_svg(
             )
             # item = labels.get(obj.id, obj.id)
 
-            if labels.get(obj.id, obj.id) == "person":
-                if trackID in person_count:
-                    continue
-                person_count.append(trackID)
+            while True:
+                start_time = time.time()
+                stop = time.time + 10
+                while time.time() < stop:
+
+                    if labels.get(obj.id, obj.id) == "person":
+                        if trackID in person_count:
+                            continue
+                        person_count.append(trackID)
+                        ### append time
+
+                print(person_count)
+
+                # elif item == "car":
+                #     label.append(f"{item}: {trackID}")
+
+            ######################################
+
+            # def update_list():
+            #     def upadte_time():
+            #         pass
+
+            #     pass
 
             ### Justin Psudocode ###
             # current_time = time.time()
@@ -111,13 +131,12 @@ def generate_svg(
             #     person_count.clean()
             #     start_time = current_time
 
-            # elif item == "car":
-            #     label.append(f"{item}: {trackID}")
-
             # shadow_text(dwg, x, y - 5, label)
             # dwg.add(dwg.rect(insert=(x, y), size=(w, h),
             #                  fill='none', stroke='red', stroke_width='2'))
             ### Justin Psudocode ###
+
+            ######################################
 
     # detected something but without tracking ID
     # else:
@@ -203,10 +222,11 @@ def main():
     )
     args = parser.parse_args()
 
-    # print('Loading {} with {} labels.'.format(args.model, args.labels))
-    print(
-        f"LOADING {os.path.join(default_model_dir, default_model)} model with {os.path.join(default_model_dir, default_labels)}"
-    )
+    # print(
+    #     f"LOADING {os.path.join(default_model_dir, default_model)} model with {os.path.join(default_model_dir, default_labels)}"
+    # )
+
+    print("\nLoading model with labels.\n")
     interpreter = common.make_interpreter(
         os.path.join(default_model_dir, default_model)
     )
@@ -220,12 +240,12 @@ def main():
 
     def user_callback(input_tensor, src_size, inference_box, mot_tracker):
         # nonlocal fps_counter
-        start_time = time.monotonic()
+        # start_time = time.monotonic()
         common.set_input(interpreter, input_tensor)
         interpreter.invoke()
         # For larger input image sizes, use the edgetpu.classification.engine for better performance
         objs = get_output(interpreter, args.threshold, args.top_k)
-        end_time = time.monotonic()
+        # end_time = time.monotonic()
         detections = []  # np.array([])
         for n in range(0, len(objs)):
             element = []  # np.array([])
@@ -269,6 +289,7 @@ def main():
 
 
 if __name__ == "__main__":
+    print("\nProcessing ... press control C to exit")
     main()
-    print("--- %s seconds ---" % (time.time() - start_time))
-    print(person_count)
+    print("\n\nCoral running %s seconds " % (time.time() - start_time))
+    # print(person_count)
