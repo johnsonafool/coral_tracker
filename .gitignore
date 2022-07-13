@@ -2,3 +2,5 @@ all_models/
 **__pycache__
 test.py
 post_test.py
+graphql.py
+graphQL_schema.txt

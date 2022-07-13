@@ -1,16 +1,15 @@
-### test 1
-### test 2
-
-
 import argparse
 import collections
-import datetime
+
+# import datetime
 import os
 import re
 import time
-from tracemalloc import stop
 
 import numpy as np
+
+# from tracemalloc import stop
+import requests
 
 import common
 import gstreamer
@@ -20,8 +19,8 @@ import gstreamer
 
 # from pandas import concat
 
-
-start_time = time.time()
+URL = "http://35.221.205.87:8000/flows/graphql"
+START_TIME = time.time()
 
 Object = collections.namedtuple("Object", ["id", "score", "bbox"])
 
@@ -269,12 +268,46 @@ def main():
                 trackerFlag,
             )
 
+        def post_server(person_flow, car_flow):
+            client = requests.session()
+
+            # Retrieve the CSRF token first
+            client.get(URL)  # sets cookie
+            if "csrftoken" in client.cookies:
+                # Django 1.6 and up
+                csrftoken = client.cookies["csrftoken"]
+            else:
+                # older versions
+                csrftoken = client.cookies["csrf"]
+
+            num1 = person_flow
+            num2 = car_flow
+
+            # print(csrftoken)
+            mutation = """mutation{
+            multiinsertFlow(inCategory: ["human", "car"], inCoordinates: ["25.0418,121.5344", "25.0418,121.5344"], flow:[%d, %d], time: "2022-12-22T18:00:00Z", affectedrows: 2){
+                IsSuccessed,
+                status
+            }
+            }""" % (
+                num1,
+                num2,
+            )
+
+            r = client.post(
+                URL, data={"query": mutation, "csrfmiddlewaretoken": csrftoken}
+            )
+
         printerLooper = True
         while printerLooper == True:
             initial_time = time.time()
             time.sleep(3)
             end_time = time.time()
             print(f"{len(person_count)} \t {person_count} \t {end_time - initial_time}")
+            person_flow = len(person_count)
+            car_flow = 0
+            post_server(person_flow, car_flow)
+            print("post to server suceeded\n")
             person_count.clear()
             printerLooper = False
 
@@ -291,7 +324,7 @@ def main():
 if __name__ == "__main__":
     print("\nProcessing ... press control C to exit")
     main()
-    print("\n\nCoral running %s seconds " % (time.time() - start_time))
+    print("\n\nCoral running %s seconds " % (time.time() - START_TIME))
 
     # stop = time.time + 10
     # while time.time() < stop:
