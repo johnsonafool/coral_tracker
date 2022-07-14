@@ -19,22 +19,13 @@ import gstreamer
 
 # from pandas import concat
 
-URL = "http://35.221.205.87:8000/flows/graphql"
+URL = ""
 START_TIME = time.time()
 
 text_file = open(r"test2.txt", "w")
 raw_data = ""
 
 Object = collections.namedtuple("Object", ["id", "score", "bbox"])
-
-# target_items = [
-#     "person",
-#     "bicycle",
-#     "car",
-#     "motorcycle",
-#     "bus",
-#     "truck",
-# ]
 
 person_count = []
 car_count = []
