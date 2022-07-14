@@ -5,6 +5,8 @@ import collections
 import os
 import re
 import time
+from operator import le
+from time import gmtime, strftime
 
 import numpy as np
 
@@ -34,7 +36,7 @@ Object = collections.namedtuple("Object", ["id", "score", "bbox"])
 # ]
 
 person_count = []
-# car_count = []
+car_count = []
 
 
 def load_labels(path):
@@ -100,54 +102,13 @@ def generate_svg(
                 if trackID in person_count:
                     continue
                 person_count.append(trackID)
-            # item = labels.get(obj.id, obj.id)
+                print(f"p: {person_count}")
 
-    # while True:
-    #     start_time = time.time()
-    #     stop = time.time() + 5
-    #     while time.time() < stop:
-    #     continue
-
-    # print(person_count)
-
-    # elif item == "car":
-    #     label.append(f"{item}: {trackID}")
-
-    ###################        Justin Psudocode        ###################
-
-    # current_time = time.time()
-    # duration =  current_time - start_time;
-    # if duration > 5min:
-    #     upload_to_server() // print('Number of people: {}'.format(len(person_count)))
-    #     person_count.clean()
-    #     start_time = current_time
-
-    ###################        Justin Psudocode        ###################
-
-    # shadow_text(dwg, x, y - 5, label)
-    # dwg.add(dwg.rect(insert=(x, y), size=(w, h),
-    #                  fill='none', stroke='red', stroke_width='2'))
-
-    # detected something but without tracking ID
-    # else:
-    #     for obj in objs:
-    #         x0, y0, x1, y1 = list(obj.bbox)
-    #         # Relative coordinates.
-    #         x, y, w, h = x0, y0, x1 - x0, y1 - y0
-    #         # Absolute coordinates, input tensor space.
-    #         x, y, w, h = int(x * inf_w), int(y *
-    #                                          inf_h), int(w * inf_w), int(h * inf_h)
-    #         # Subtract boxing offset.
-    #         x, y = x - box_x, y - box_y
-    #         # Scale to source coordinate space.
-    #         x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
-    #         percent = int(100 * obj.score)
-    #         label = '{}% {}'.format(percent, labels.get(obj.id, obj.id))
-
-    #         shadow_text(dwg, x, y - 5, label)
-    #         dwg.add(dwg.rect(insert=(x, y), size=(w, h),
-    #                          fill='none', stroke='red', stroke_width='2'))
-    # return dwg.tostring()
+            if labels.get(obj.id, obj.id) == "car":
+                if trackID in car_count:
+                    continue
+                car_count.append(trackID)
+                print(f"c: {car_count}")
 
 
 class BBox(collections.namedtuple("BBox", ["xmin", "ymin", "xmax", "ymax"])):
@@ -193,7 +154,7 @@ def main():
         help="number of categories with highest score to display",
     )
     parser.add_argument(
-        "--threshold", type=float, default=0.7, help="classifier score threshold"
+        "--threshold", type=float, default=0.2, help="classifier score threshold"
     )
     parser.add_argument(
         "--videosrc", help="Which video source to use. ", default="/dev/video0"
@@ -233,7 +194,7 @@ def main():
         # start_time = time.monotonic()
         common.set_input(interpreter, input_tensor)
         interpreter.invoke()
-        # For larger input image sizes, use the edgetpu.classification.engine for better performance
+        # // For larger input image sizes, use the edgetpu.classification.engine for better performance
         objs = get_output(interpreter, args.threshold, args.top_k)
         # end_time = time.monotonic()
         detections = []  # np.array([])
@@ -245,7 +206,7 @@ def main():
             element.append(objs[n].bbox.ymax)
             element.append(objs[n].score)  # print('element= ',element)
             detections.append(element)  # print('dets: ',dets)
-        # convert to numpy array #      print('npdets: ',dets)
+        # // convert to numpy array #      print('npdets: ',dets)
         detections = np.array(detections)
         trdata = []
         trackerFlag = False
@@ -268,7 +229,7 @@ def main():
                 trackerFlag,
             )
 
-        def post_server(person_flow, car_flow):
+        def post_server(person_flow, car_flow, current_time):
             client = requests.session()
 
             # Retrieve the CSRF token first
@@ -285,13 +246,14 @@ def main():
 
             # print(csrftoken)
             mutation = """mutation{
-            multiinsertFlow(inCategory: ["human", "car"], inCoordinates: ["25.0418,121.5344", "25.0418,121.5344"], flow:[%d, %d], time: "2022-12-22T18:00:00Z", affectedrows: 2){
+            multiinsertFlow(inCategory: ["human", "car"], inCoordinates: ["25.0418,121.5344", "25.0418,121.5344"], flow:[%d, %d], time: "%s", affectedrows: 2){
                 IsSuccessed,
                 status
             }
             }""" % (
                 num1,
                 num2,
+                current_time,
             )
 
             r = client.post(
@@ -303,13 +265,38 @@ def main():
             initial_time = time.time()
             time.sleep(3)
             end_time = time.time()
-            print(f"{len(person_count)} \t {person_count} \t {end_time - initial_time}")
+            current_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
+
+            # print(f"{len(person_count)} \t {person_count} \t {end_time - initial_time}")
             person_flow = len(person_count)
-            car_flow = 0
-            post_server(person_flow, car_flow)
+            car_flow = len(car_count)
+
+            post_server(person_flow, car_flow, current_time)
             print("post to server suceeded\n")
+
             person_count.clear()
+            car_count.clear()
+
             printerLooper = False
+
+        # printerLooper = True
+        # while printerLooper == True:
+        #     initial_time = time.time()
+        #     time.sleep(3)
+        #     end_time = time.time()
+        #     current_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
+        #     print(current_time)
+
+        #     # print(
+        #     #     f"person: {len(person_count)} \t car: {len(car_count)} \t {end_time - initial_time} \n\n this data sent to server at {current_time}\n"
+        #     # )
+        #     person_flow = len(person_count)
+        #     # car_flow = len(car_count)
+        #     car_flow = 0
+        #     post_server(person_flow, car_flow, current_time)
+        #     person_count.clear()
+        #     # car_count.clear()
+        #     printerLooper = False
 
     result = gstreamer.run_pipeline(
         user_callback,
@@ -325,9 +312,3 @@ if __name__ == "__main__":
     print("\nProcessing ... press control C to exit")
     main()
     print("\n\nCoral running %s seconds " % (time.time() - START_TIME))
-
-    # stop = time.time + 10
-    # while time.time() < stop:
-
-    #         ### append time
-    #     print(len(person_count))
