@@ -20,8 +20,9 @@ import gstreamer
 
 
 # from pandas import concat
+from decouple import config
 
-URL = "http://35.221.205.87:8000/flows/graphql"
+url = config("URL")
 START_TIME = time.time()
 
 Object = collections.namedtuple("Object", ["id", "score", "bbox"])
