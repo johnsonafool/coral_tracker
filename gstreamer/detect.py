@@ -263,7 +263,7 @@ def main():
         printerLooper = True
         while printerLooper == True:
             initial_time = time.time()
-            time.sleep(3)
+            time.sleep(2)
             end_time = time.time()
             current_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
 
