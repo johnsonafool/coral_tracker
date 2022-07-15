@@ -3,6 +3,6 @@ all_models/
 test.py
 post_test.py
 graphql.py
-csv_test.pytest_csv.py
+csv_test.py
 graphQL_schema.txt
 .env
