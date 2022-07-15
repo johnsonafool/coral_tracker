@@ -4,5 +4,6 @@ all_models/
 test.py
 post_test.py
 graphql.py
-test_detect
+test_detect.py
 graphQL_schema.txt
+.env
