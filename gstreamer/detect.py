@@ -1,5 +1,6 @@
 import argparse
 import collections
+import csv
 
 # import datetime
 import os
@@ -13,14 +14,14 @@ import numpy as np
 # from tracemalloc import stop
 import requests
 
+# from pandas import concat
+from decouple import config
+
 import common
 import gstreamer
 
 # import svgwrite
 
-
-# from pandas import concat
-from decouple import config
 
 url = config("URL")
 START_TIME = time.time()
