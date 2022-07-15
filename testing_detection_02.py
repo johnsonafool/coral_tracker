@@ -1,7 +1,6 @@
 # new
 import argparse
 import collections
-
 # import datetime
 import os
 import re
@@ -10,7 +9,6 @@ from time import strftime
 
 import common
 import numpy as np
-
 # from tracemalloc import stop
 import requests
 
@@ -240,21 +238,23 @@ def main():
                 time.sleep(10)
                 end_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
                 print(f"P: {person_count} \t C: {car_count}")
-
                 print(f"person,car,init,end")
                 raw_data = (
                     f"{len(person_count)},{len(car_count)},{initial_time},{end_time}"
                 )
                 print(raw_data)
+
                 # person_flow = len(person_count)
                 # car_flow = 0
                 # post_server(person_flow, car_flow)
                 # print("post to server suceeded\n")
                 person_count.clear()
                 car_count.clear()
-                printerLooper = False
+
+            def 
 
             duration_count()
+            printerLooper = False
 
             # def post_server(person_flow, car_flow):
             #     client = requests.session()
