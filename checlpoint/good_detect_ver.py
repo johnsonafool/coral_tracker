@@ -1,6 +1,7 @@
 # new
 import argparse
 import collections
+
 # import datetime
 import os
 import re
@@ -9,6 +10,7 @@ from time import strftime
 
 import common
 import numpy as np
+
 # from tracemalloc import stop
 import requests
 
@@ -35,11 +37,6 @@ Object = collections.namedtuple("Object", ["id", "score", "bbox"])
 
 person_count = []
 car_count = []
-bicycle_count = []
-car_count = []
-motorcycle_count = []
-bus_count = []
-truck_count = []
 
 
 def load_labels(path):
@@ -49,9 +46,9 @@ def load_labels(path):
         return {int(num): text.strip() for num, text in lines}
 
 
-# def shadow_text(dwg, x, y, text, font_size=20):
-#     dwg.add(dwg.text(text, insert=(x + 1, y + 1), fill="black", font_size=font_size))
-#     dwg.add(dwg.text(text, insert=(x, y), fill="white", font_size=font_size))
+def shadow_text(dwg, x, y, text, font_size=20):
+    dwg.add(dwg.text(text, insert=(x + 1, y + 1), fill="black", font_size=font_size))
+    dwg.add(dwg.text(text, insert=(x, y), fill="white", font_size=font_size))
 
 
 def generate_svg(
@@ -109,8 +106,54 @@ def generate_svg(
                 if trackID in person_count:
                     continue
                 car_count.append(trackID)
+            # item = labels.get(obj.id, obj.id)
 
-            # if truck, bicycle, ...
+    # while True:
+    #     start_time = time.time()
+    #     stop = time.time() + 5
+    #     while time.time() < stop:
+    #     continue
+
+    # print(person_count)
+
+    # elif item == "car":
+    #     label.append(f"{item}: {trackID}")
+
+    ###################        Justin Psudocode        ###################
+
+    # current_time = time.time()
+    # duration =  current_time - start_time;
+    # if duration > 5min:
+    #     upload_to_server() // print('Number of people: {}'.format(len(person_count)))
+    #     person_count.clean()
+    #     start_time = current_time
+
+    ###################        Justin Psudocode        ###################
+
+    # shadow_text(dwg, x, y - 5, label)
+    # dwg.add(dwg.rect(insert=(x, y), size=(w, h),
+    #                  fill='none', stroke='red', stroke_width='2'))
+
+    # detected something but without tracking ID
+    # else:
+    #     for obj in objs:
+    #         x0, y0, x1, y1 = list(obj.bbox)
+    #         # Relative coordinates.
+    #         x, y, w, h = x0, y0, x1 - x0, y1 - y0
+    #         # Absolute coordinates, input tensor space.
+    #         x, y, w, h = int(x * inf_w), int(y *
+    #                                          inf_h), int(w * inf_w), int(h * inf_h)
+    #         # Subtract boxing offset.
+    #         x, y = x - box_x, y - box_y
+    #         # Scale to source coordinate space.
+    #         x, y, w, h = x * scale_x, y * scale_y, w * scale_x, h * scale_y
+    #         percent = int(100 * obj.score)
+    #         label = '{}% {}'.format(percent, labels.get(obj.id, obj.id))
+
+    #         shadow_text(dwg, x, y - 5, label)
+    #         dwg.add(dwg.rect(insert=(x, y), size=(w, h),
+    #                          fill='none', stroke='red', stroke_width='2'))
+    # return dwg.tostring()
 
 
 class BBox(collections.namedtuple("BBox", ["xmin", "ymin", "xmax", "ymax"])):
@@ -138,13 +181,12 @@ def get_output(interpreter, score_threshold, top_k, image_scale=1.0):
         )
 
     return [make(i) for i in range(top_k) if scores[i] >= score_threshold]
-    # return [make(i) for i in range(top_k) if scores[i] >= 0.5]
 
 
 def main():
-    model_dir = "../models"
-    model = "mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite"
-    labels = "coco_labels.txt"
+    default_model_dir = "../models"
+    default_model = "mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite"
+    default_labels = "coco_labels.txt"
     parser = argparse.ArgumentParser()
     # parser.add_argument('--model', help='.tflite model path',
     #                     default=os.path.join(default_model_dir, default_model))
@@ -180,10 +222,12 @@ def main():
     #     f"LOADING {os.path.join(default_model_dir, default_model)} model with {os.path.join(default_model_dir, default_labels)}"
     # )
 
-    # print("\nLoading model with labels.\n")
-    interpreter = common.make_interpreter(os.path.join(model_dir, model))
+    print("\nLoading model with labels.\n")
+    interpreter = common.make_interpreter(
+        os.path.join(default_model_dir, default_model)
+    )
     interpreter.allocate_tensors()
-    labels = load_labels(os.path.join(model_dir, labels))
+    labels = load_labels(os.path.join(default_model_dir, default_labels))
 
     w, h, _ = common.input_image_size(interpreter)
     inference_size = (w, h)
@@ -195,96 +239,89 @@ def main():
         # start_time = time.monotonic()
         printerLooper = True
         while printerLooper == True:
-
-            def duration_count():
-                common.set_input(interpreter, input_tensor)
-                interpreter.invoke()
-                # For larger input image sizes, use the edgetpu.classification.engine for better performance
-                objs = get_output(interpreter, args.threshold, args.top_k)
-                # end_time = time.monotonic()
-                detections = []  # np.array([])
-                for n in range(0, len(objs)):
-                    element = []  # np.array([])
-                    element.append(objs[n].bbox.xmin)
-                    element.append(objs[n].bbox.ymin)
-                    element.append(objs[n].bbox.xmax)
-                    element.append(objs[n].bbox.ymax)
-                    element.append(objs[n].score)  # print('element= ',element)
-                    detections.append(element)  # print('dets: ',dets)
-                # convert to numpy array #      print('npdets: ',dets)
-                detections = np.array(detections)
-                trdata = []
-                trackerFlag = False
-                if detections.any():
-                    if mot_tracker != None:
-                        trdata = mot_tracker.update(detections)
-                        trackerFlag = True
-                    # text_lines = [
-                    #     "Inference: {:.2f} ms".format((end_time - start_time) * 1000),
-                    #     "FPS: {} fps".format(round(next(fps_counter))),
-                    # ]
-                if len(objs) != 0:
-                    return generate_svg(
-                        src_size,
-                        inference_size,
-                        inference_box,
-                        objs,
-                        labels,
-                        trdata,
-                        trackerFlag,
-                    )
-
-                initial_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
-                time.sleep(10)
-                end_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
-                print(f"P: {person_count} \t C: {car_count}")
-                print(f"person,car,init,end")
-                raw_data = (
-                    f"{len(person_count)},{len(car_count)},{initial_time},{end_time}"
+            common.set_input(interpreter, input_tensor)
+            interpreter.invoke()
+            # For larger input image sizes, use the edgetpu.classification.engine for better performance
+            objs = get_output(interpreter, args.threshold, args.top_k)
+            # end_time = time.monotonic()
+            detections = []  # np.array([])
+            for n in range(0, len(objs)):
+                element = []  # np.array([])
+                element.append(objs[n].bbox.xmin)
+                element.append(objs[n].bbox.ymin)
+                element.append(objs[n].bbox.xmax)
+                element.append(objs[n].bbox.ymax)
+                element.append(objs[n].score)  # print('element= ',element)
+                detections.append(element)  # print('dets: ',dets)
+            # convert to numpy array #      print('npdets: ',dets)
+            detections = np.array(detections)
+            trdata = []
+            trackerFlag = False
+            if detections.any():
+                if mot_tracker != None:
+                    trdata = mot_tracker.update(detections)
+                    trackerFlag = True
+                # text_lines = [
+                #     "Inference: {:.2f} ms".format((end_time - start_time) * 1000),
+                #     "FPS: {} fps".format(round(next(fps_counter))),
+                # ]
+            if len(objs) != 0:
+                return generate_svg(
+                    src_size,
+                    inference_size,
+                    inference_box,
+                    objs,
+                    labels,
+                    trdata,
+                    trackerFlag,
                 )
-                print(raw_data)
 
-                # person_flow = len(person_count)
-                # car_flow = 0
-                # post_server(person_flow, car_flow)
-                # print("post to server suceeded\n")
-                person_count.clear()
-                car_count.clear()
+            def post_server(person_flow, car_flow):
+                client = requests.session()
 
-            def 
+                # Retrieve the CSRF token first
+                client.get(URL)  # sets cookie
+                if "csrftoken" in client.cookies:
+                    # Django 1.6 and up
+                    csrftoken = client.cookies["csrftoken"]
+                else:
+                    # older versions
+                    csrftoken = client.cookies["csrf"]
 
-            duration_count()
+                num1 = person_flow
+                num2 = car_flow
+
+                # print(csrftoken)
+                mutation = """mutation{
+                multiinsertFlow(inCategory: ["human", "car"], inCoordinates: ["25.0418,121.5344", "25.0418,121.5344"], flow:[%d, %d], time: "2022-12-22T18:00:00Z", affectedrows: 2){
+                    IsSuccessed,
+                    status
+                }
+                }""" % (
+                    num1,
+                    num2,
+                )
+
+                r = client.post(
+                    URL, data={"query": mutation, "csrfmiddlewaretoken": csrftoken}
+                )
+
+            initial_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
+            time.sleep(60)
+            end_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
+            print(f"P: {person_count}")
+            print(f"C: {car_count}")
+            print(f"person,car,init,end")
+            raw_data = f"{len(person_count)},{len(car_count)},{initial_time},{end_time}"
+            print(raw_data)
+
+            # person_flow = len(person_count)
+            # car_flow = 0
+            # post_server(person_flow, car_flow)
+            # print("post to server suceeded\n")
+            person_count.clear()
+            car_count.clear()
             printerLooper = False
-
-            # def post_server(person_flow, car_flow):
-            #     client = requests.session()
-
-            #     # Retrieve the CSRF token first
-            #     client.get(URL)  # sets cookie
-            #     if "csrftoken" in client.cookies:
-            #         # Django 1.6 and up
-            #         csrftoken = client.cookies["csrftoken"]
-            #     else:
-            #         # older versions
-            #         csrftoken = client.cookies["csrf"]
-
-            #     num1 = person_flow
-            #     num2 = car_flow
-
-            #     # print(csrftoken)
-            #     mutation = """mutation{
-            #     multiinsertFlow(inCategory: ["human", "car"], inCoordinates: ["25.0418,121.5344", "25.0418,121.5344"], flow:[%d, %d], time: "2022-12-22T18:00:00Z", affectedrows: 2){
-            #         IsSuccessed,
-            #         status
-            #     }
-            #     }""" % (
-            #         num1,
-            #         num2,
-            #     )
-
-            #     r = client.post(
-            #         URL, data={"query": mutation, "csrfmiddlewaretoken": csrftoken}
-            #     )
 
     result = gstreamer.run_pipeline(
         user_callback,
@@ -297,7 +334,7 @@ def main():
 
 
 if __name__ == "__main__":
-    print("\nProcessing ... press control C to exit\n")
+    print("\nProcessing ... press control C to exit")
     main()
     print("\n\nCoral running %s seconds " % (time.time() - START_TIME))
 

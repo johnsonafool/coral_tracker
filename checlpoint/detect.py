@@ -1,38 +1,31 @@
+# new
 import argparse
 import collections
-# import datetime
 import os
 import re
 import time
-from operator import le
-from time import gmtime, strftime
-
-import numpy as np
-# from tracemalloc import stop
-import requests
-# from pandas import concat
-from decouple import config
+from time import strftime
 
 import common
+import numpy as np
+
+# from tracemalloc import stop
+import requests
+
 import gstreamer
 
 # import svgwrite
 
 
+# from pandas import concat
 
-url = config("URL")
+URL = ""
 START_TIME = time.time()
 
-Object = collections.namedtuple("Object", ["id", "score", "bbox"])
+text_file = open(r"test2.txt", "w")
+raw_data = ""
 
-# target_items = [
-#     "person",
-#     "bicycle",
-#     "car",
-#     "motorcycle",
-#     "bus",
-#     "truck",
-# ]
+Object = collections.namedtuple("Object", ["id", "score", "bbox"])
 
 person_count = []
 car_count = []
@@ -101,13 +94,10 @@ def generate_svg(
                 if trackID in person_count:
                     continue
                 person_count.append(trackID)
-                print(f"p: {person_count}")
-
             if labels.get(obj.id, obj.id) == "car":
-                if trackID in car_count:
+                if trackID in person_count:
                     continue
                 car_count.append(trackID)
-                print(f"c: {car_count}")
 
 
 class BBox(collections.namedtuple("BBox", ["xmin", "ymin", "xmax", "ymax"])):
@@ -153,7 +143,7 @@ def main():
         help="number of categories with highest score to display",
     )
     parser.add_argument(
-        "--threshold", type=float, default=0.2, help="classifier score threshold"
+        "--threshold", type=float, default=0.5, help="classifier score threshold"
     )
     parser.add_argument(
         "--videosrc", help="Which video source to use. ", default="/dev/video0"
@@ -191,112 +181,63 @@ def main():
     def user_callback(input_tensor, src_size, inference_box, mot_tracker):
         # nonlocal fps_counter
         # start_time = time.monotonic()
-        common.set_input(interpreter, input_tensor)
-        interpreter.invoke()
-        # // For larger input image sizes, use the edgetpu.classification.engine for better performance
-        objs = get_output(interpreter, args.threshold, args.top_k)
-        # end_time = time.monotonic()
-        detections = []  # np.array([])
-        for n in range(0, len(objs)):
-            element = []  # np.array([])
-            element.append(objs[n].bbox.xmin)
-            element.append(objs[n].bbox.ymin)
-            element.append(objs[n].bbox.xmax)
-            element.append(objs[n].bbox.ymax)
-            element.append(objs[n].score)  # print('element= ',element)
-            detections.append(element)  # print('dets: ',dets)
-        # // convert to numpy array #      print('npdets: ',dets)
-        detections = np.array(detections)
-        trdata = []
-        trackerFlag = False
-        if detections.any():
-            if mot_tracker != None:
-                trdata = mot_tracker.update(detections)
-                trackerFlag = True
-            # text_lines = [
-            #     "Inference: {:.2f} ms".format((end_time - start_time) * 1000),
-            #     "FPS: {} fps".format(round(next(fps_counter))),
-            # ]
-        if len(objs) != 0:
-            return generate_svg(
-                src_size,
-                inference_size,
-                inference_box,
-                objs,
-                labels,
-                trdata,
-                trackerFlag,
-            )
+        printerLooper = True
+        while printerLooper == True:
+            common.set_input(interpreter, input_tensor)
+            interpreter.invoke()
+            # For larger input image sizes, use the edgetpu.classification.engine for better performance
+            objs = get_output(interpreter, args.threshold, args.top_k)
+            # end_time = time.monotonic()
+            detections = []  # np.array([])
+            for n in range(0, len(objs)):
+                element = []  # np.array([])
+                element.append(objs[n].bbox.xmin)
+                element.append(objs[n].bbox.ymin)
+                element.append(objs[n].bbox.xmax)
+                element.append(objs[n].bbox.ymax)
+                element.append(objs[n].score)  # print('element= ',element)
+                detections.append(element)  # print('dets: ',dets)
+            # convert to numpy array #      print('npdets: ',dets)
+            detections = np.array(detections)
+            trdata = []
+            trackerFlag = False
+            if detections.any():
+                if mot_tracker != None:
+                    trdata = mot_tracker.update(detections)
+                    trackerFlag = True
 
-        def post_server(person_flow, car_flow, current_time):
-            client = requests.session()
+            if len(objs) != 0:
+                return generate_svg(
+                    src_size,
+                    inference_size,
+                    inference_box,
+                    objs,
+                    labels,
+                    trdata,
+                    trackerFlag,
+                )
 
-            # Retrieve the CSRF token first
-            client.get(URL)  # sets cookie
-            if "csrftoken" in client.cookies:
-                # Django 1.6 and up
-                csrftoken = client.cookies["csrftoken"]
-            else:
-                # older versions
-                csrftoken = client.cookies["csrf"]
+            def to_raw_data():
+                initial_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
+                time.sleep(2)
+                end_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
+                print(f"P: {person_count}")
+                print(f"C: {car_count}")
+                print(f"person,car,init,end")
+                single_result = (
+                    f"({len(person_count)},{len(car_count)},{initial_time},{end_time})"
+                )
+                print(single_result)
+                raw_data = ",".join(single_result)
 
-            num1 = person_flow
-            num2 = car_flow
+                return raw_data
 
-            # print(csrftoken)
-            mutation = """mutation{
-            multiinsertFlow(inCategory: ["human", "car"], inCoordinates: ["25.0418,121.5344", "25.0418,121.5344"], flow:[%d, %d], time: "%s", affectedrows: 2){
-                IsSuccessed,
-                status
-            }
-            }""" % (
-                num1,
-                num2,
-                current_time,
-            )
+            to_raw_data()
 
-            r = client.post(
-                URL, data={"query": mutation, "csrfmiddlewaretoken": csrftoken}
-            )
-        ######### todo #############
-        # printerLooper = True
-        # while printerLooper == True:
-        #     initial_time = time.time()
-        #     time.sleep(2)
-        #     end_time = time.time()
-        #     current_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
+            person_count.clear()
+            car_count.clear()
 
-        #     # print(f"{len(person_count)} \t {person_count} \t {end_time - initial_time}")
-        #     person_flow = len(person_count)
-        #     car_flow = len(car_count)
-
-        #     post_server(person_flow, car_flow, current_time)
-        #     print("post to server suceeded\n")
-
-        #     person_count.clear()
-        #     car_count.clear()
-
-        #     printerLooper = False
-        ######### todo #############
-
-        # printerLooper = True
-        # while printerLooper == True:
-        #     initial_time = time.time()
-        #     time.sleep(3)
-        #     end_time = time.time()
-        #     current_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
-        #     print(current_time)
-
-        #     # print(
-        #     #     f"person: {len(person_count)} \t car: {len(car_count)} \t {end_time - initial_time} \n\n this data sent to server at {current_time}\n"
-        #     # )
-        #     person_flow = len(person_count)
-        #     # car_flow = len(car_count)
-        #     car_flow = 0
-        #     post_server(person_flow, car_flow, current_time)
-        #     person_count.clear()
-        #     # car_count.clear()
-        #     printerLooper = False
+            printerLooper = False
 
     result = gstreamer.run_pipeline(
         user_callback,
@@ -311,5 +252,6 @@ def main():
 if __name__ == "__main__":
     print("\nProcessing ... press control C to exit")
     main()
+    # text_file.write(raw_data)
+    # text_file.close()
     print("\n\nCoral running %s seconds " % (time.time() - START_TIME))
-y
