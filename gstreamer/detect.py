@@ -141,9 +141,9 @@ def get_output(interpreter, score_threshold, top_k, image_scale=1.0):
 
 
 def main():
-    default_model_dir = "../models"
-    default_model = "mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite"
-    default_labels = "coco_labels.txt"
+    model_dir = "../models"
+    model = "mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite"
+    labels = "coco_labels.txt"
     parser = argparse.ArgumentParser()
     # parser.add_argument('--model', help='.tflite model path',
     #                     default=os.path.join(default_model_dir, default_model))
@@ -180,11 +180,9 @@ def main():
     # )
 
     print("\nLoading model with labels.\n")
-    interpreter = common.make_interpreter(
-        os.path.join(default_model_dir, default_model)
-    )
+    interpreter = common.make_interpreter(os.path.join(model_dir, model))
     interpreter.allocate_tensors()
-    labels = load_labels(os.path.join(default_model_dir, default_labels))
+    labels = load_labels(os.path.join(model_dir, labels))
 
     w, h, _ = common.input_image_size(interpreter)
     inference_size = (w, h)
@@ -259,7 +257,7 @@ def main():
             )
 
             r = client.post(
-                URL, data={"query": mutation, "csrfmiddlewaretoken": csrftoken}
+                url, data={"query": mutation, "csrfmiddlewaretoken": csrftoken}
             )
 
         printerLooper = True
@@ -280,25 +278,6 @@ def main():
             car_count.clear()
 
             printerLooper = False
-
-        # printerLooper = True
-        # while printerLooper == True:
-        #     initial_time = time.time()
-        #     time.sleep(3)
-        #     end_time = time.time()
-        #     current_time = strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime())
-        #     print(current_time)
-
-        #     # print(
-        #     #     f"person: {len(person_count)} \t car: {len(car_count)} \t {end_time - initial_time} \n\n this data sent to server at {current_time}\n"
-        #     # )
-        #     person_flow = len(person_count)
-        #     # car_flow = len(car_count)
-        #     car_flow = 0
-        #     post_server(person_flow, car_flow, current_time)
-        #     person_count.clear()
-        #     # car_count.clear()
-        #     printerLooper = False
 
     result = gstreamer.run_pipeline(
         user_callback,
