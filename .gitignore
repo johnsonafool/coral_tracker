@@ -1,9 +1,6 @@
 models/
 all_models/
+third_party/
+utils/
 **__pycache__
-test.py
-post_test.py
-graphql.py
-test_detect.py
-graphQL_schema.txt
 .env
