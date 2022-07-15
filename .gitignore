@@ -2,5 +2,6 @@ models/
 all_models/
 third_party/
 utils/
+checkpoint/
 **__pycache__
 .env
